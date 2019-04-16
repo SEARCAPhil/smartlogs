@@ -1,9 +1,9 @@
 <?php
-require_once('Logger.php');
+require_once('SmartLogs.php');
 require_once('SampleJson.php');
 
 use SmartLogs\Logger;
 
 
 $a = new Logger();
-$a->write($json, $json2)->print();
+$a->write($json2, $json);

@@ -28,34 +28,42 @@ class Logger {
     self::checkComponents ($jsonArray);
 
     # rebuild array to recommended structure
-    $this->parsedData = self::build([], $jsonArray->data);
+    # $this->parsedData = self::build([], $jsonArray->data);
 
     # return pre-parsed log result
-    return self::save($this->parsedData, $jsonArray->author);
+    #return self::save($this->parsedData, $jsonArray->author);
+    return $jsonArray ;
   }
 
 
 
-  public function write ($json, $prevJSON = null) {
-
+  public function write ($json, $prevJSON = null, $sign = '') {
+    $this->sign = $sign;
     $new = self::parse ($json);
     $prev = self::parse ($prevJSON);
+
 
     # compare result if there is a previous result
     # otherwise save the first one
     if(!$prevJSON) {
       $this->root = $new;
     } else {
-      var_dump($this->diff([], $new->data, $prev->data));
+      $this->diff([], $new->data, $prev->data);
     }
     return $this;
   }
 
   public function diff($root = [], $new, $old) {
-    return self::intersect ($root = [], $new, $old);
+    # generate a two different sets to identify which has been added or removed
+    # then compare both results
+    $setA = self::intersect ($root = [], $new, $old);
+    $setB = self::intersect ($root = [], $old, $new, '.'); 
+
+    var_dump(array_merge($setB,$setA));
+    return $this;
   }
 
-  public function intersect ($root = [], $new, $old) { 
+  public function intersect ($root = [], $new, $old, $attr = '') { 
     foreach ($new as $key => $value) { 
       # alter spaces to underscore _
       $keyName = str_replace(' ', '_', $key);
@@ -69,7 +77,7 @@ class Logger {
       # Note: there is no need to read all sub data since the parent does not exists
       # in the previous one and considered as relatively new
       if(!$oldKey) { 
-        $r = (gettype($root) === 'object') ? ($root->{$keyName} = $value) : ($root[$keyName] = $value);
+        $r = (gettype($root) === 'object') ? ($root->{"${attr}${keyName}"} = $value) : ($root["${attr}${keyName}"] = $value);
       }
 
       # if field is both present, consider comparing values
@@ -83,15 +91,15 @@ class Logger {
         # this is for objects or array
         if(gettype($newKey) === 'object') { 
           if(gettype($root) === 'object') {
-            $root->{$keyName} = $this->diff (new \StdClass, $value, $oldKey) ;
+            $root->{$keyName} = $this->intersect(new \StdClass, $value, $oldKey, $attr) ;
           } else { 
-            $root[$keyName] = $this->diff ([], $value, $oldKey) ;
+            $root[$keyName] = $this->intersect([], $value, $oldKey, $attr) ;
           }
         }
 
         if(gettype($newKey) === 'array') { 
           if(gettype($root) === 'array') {
-            $root[$keyName] = $this->diff ([], $value, $oldKey) ;
+            $root[$keyName] = $this->intersect ([], $value, $oldKey, $attr) ;
           }
         }
       }
@@ -100,42 +108,5 @@ class Logger {
     return $root;
   }
 
-  public function build ($root = [], $data) {
-    
-    foreach ($data as $key => $value) {
-      # alter spaces to underscore _
-      $keyName = str_replace(' ', '_', $key);
-  
-      if(gettype($root) === 'object') { 
-        $root->{$keyName} = $value;
-        # traverse children for non-string value
-        if(gettype($value) !== 'string') $root->{$keyName} = $this->build($root->{$keyName}, $value);
-      } else { 
-        $root[$keyName] = $value;
-        if(gettype($value) !== 'string') $root[$keyName] = $this->build($root[$keyName], $value);
-        
-      }
-    }
-    
-    return $root;
-  }
-
-
-  public function save($data, $author) {
-    $obj = new \StdClass;
-    $obj->name = (new \DateTime())->format('Y-m-d H:i:s');;
-    $obj->data = $data;
-    $obj->author = $author;
-    return $obj;
-  }
-
-  function print () {
-    //echo $this->root;
-  }
-
-  function json () {
-    $this->root = json_encode((object) $this->root);
-    return $this;
-  }
 }
 
