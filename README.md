@@ -3,8 +3,8 @@ A standard, comprehensive, effective and efficient logging library for inspectin
 
 ## What it does
 ___
-1. Compare JSON and save it as log
-2. Create a comprehensive timeline from logs
+1. Compare JSON and save the result as log
+2. Parse and create a comprehensive timeline from logs
 
 
 ## How it works ?
@@ -14,6 +14,10 @@ ___
 1. Compare data in JSON format (new and old)
 2. Capture the items that have been added, changed or deleted
 3. Generate JSON in memory that contains those changes
+
+### Merging
+1. Read logs synchronously
+2. **Merge 2** logs to generate a **Frame** which contains the data before a recent changes occur. 
 
 
 ## Installation
