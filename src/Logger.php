@@ -19,6 +19,7 @@ class Logger {
    */
   function __construct () {
     $this->payload = [];
+    $this->log = new \StdClass;
   }
 
   /**
@@ -155,16 +156,20 @@ class Logger {
     # validate data
     $this->sign = $sign;
     $new = self::parse ($json);
-    $prev = self::parse ($prevJSON);
+    
 
     # compare result if there is a previous result
     # otherwise save the first one
     if(!$prevJSON) {
-      $this->payload = $new;  
+      $this->payload = self::toArray($new->data);  
     } else {
+      $prev = self::parse ($prevJSON);
       $this->compare($new->data, $prev->data);
     }
-    return $this;
+    
+    # combine data and author
+    $this->log = self::encapsulate($this->payload, self::toArray($new->author));
+    return $this->log;
   }
 
 
@@ -190,22 +195,41 @@ class Logger {
   }
 
   /**
-   * Print the payload
+   * Create a payload with data and author
+   * 
+   * {
+   *    data: array,
+   *    author: array
+   * }
    */
-  public function show () {
-    print_r($this->payload);
+  function encapsulate ($data, $author) {
+    $this->nlog = new \StdClass;
+    $this->nlog->data = $data;
+    $this->nlog->author = $author;
+    return $this->nlog;
   }
 
-
-  /**
-   * Generate payload in JSON format
-   */
-  public function json () {
-    # returns JSON encoded result
-    $this->payload = json_encode($this->payload);
-    return $this;
+  public function toArray ($data, $root = []) {
+    # convert data to object first before reading
+    $root = (array) $root;
+    foreach ($data as $key => $value) {
+      if(is_array($value)) {
+        $root[$key] = $this->toArray([], $value);
+      } else {
+        $root[$key] = $value;
+      }
+    }
+    return $root;
   }
 
+  public function frame($log, $file) {
+    $decoded_file = json_decode($file);
 
+    $original_context = self::merge($log->data, (array) $decoded_file->data);
+    
+    // get the previous author and data
+    // and produce a new object
+    return  self::encapsulate($original_context, self::toArray($decoded_file->author));
+  }
 }
 

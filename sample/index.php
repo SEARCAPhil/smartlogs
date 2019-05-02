@@ -3,27 +3,28 @@ require_once('src/Logger.php');
 use SmartLogs\Logger;
 
 # JSON files
-$file1 = file_get_contents('sample/json/01-31-2019 13-04-00.json');
-$file2 = file_get_contents('sample/json/01-31-2019 13-05-00.json');
+$ajax1 = file_get_contents('sample/json/01-31-2019 13-04-00.json');
+$ajax2 = file_get_contents('sample/json/01-31-2019 13-05-00.json');
 
 
 # new Logger Instance
 $a = new Logger();
 
-# parsing
+# Log1
+# When logging, the initial data would always be the parsed original data
+$log1 = $ajax1;
+
+# PARSING
 # (new, old)
-$a->diff($file1, $file2);
-#$a->unsigned()->json();
+# Note: $ajax2 is the data that came from a parsed input sent through HTTP
+# which means this request contains raw data and author.
+# To create a new log, we must get the difference between the initial data 
+# and the data coming from a certain request
+$log2 = $a->diff($ajax2, $log1);
+var_dump($log2); exit;
 
-# inpect and convert data to JSON
-# This is a sample result from comparing two different JSON
-# and will be the SECOND smartLog since the FIRST log is the initial data
-$log1 = $file1;
-$log2 = $a->payload; // results from changing something by a certain user
- #var_dump($log2);
- 
-
-# NOTE: WHEN log1 and log2 is combined, the result must be equivalent to the 2nd data / file
-$decoded_file1 = (array) (json_decode($file1)->data);
-$mergedLog = $a->merge($log2, $decoded_file1);
-var_dump($mergedLog);
+# FRAMING
+# NOTE: WHEN the diff result is combined with the most recent log ($log1 in this case), 
+# we can derive a new set of data containing the PREVIOUS data before the changes occur
+$frame = json_encode($a->frame($log2, $log1));
+var_dump($frame);
