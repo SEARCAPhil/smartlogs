@@ -100,8 +100,11 @@ class Logger {
       $keyName = str_replace(' ', '_', $key);
 
       # prevent missused of stdClass and array
-      $oldKey = is_object($old) ? $old->{$keyName} :$old[$keyName];
-      $newKey = is_object($new) ? $new->{$keyName} :$new[$keyName];
+      # Undefined offset:
+      # Undefined property: stdClass
+      # If onject does not found, it will return an empty value instead
+      $oldKey = is_object($old) ? @$old->{$keyName} : @$old[$keyName];
+      $newKey = is_object($new) ? @$new->{$keyName} : @$new[$keyName];
 
       # detect if new one exists in previous
       # if not add to stagging area
@@ -154,7 +157,6 @@ class Logger {
    */
   public function diff ($json, $prevJSON = null) {
     # validate data
-    $this->sign = $sign;
     $new = self::parse ($json);
     
 
